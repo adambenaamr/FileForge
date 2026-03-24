@@ -1,0 +1,13 @@
+[project]
+name = "FileForge"
+version = "1.0.0"
+description = "A CLI tool for file operations"
+authors = [{ name = "Adam Ben-Aamr" }]
+dependencies = ["click"]
+
+[project.scripts]
+ff = "ff.cli:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
