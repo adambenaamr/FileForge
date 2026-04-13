@@ -10,26 +10,19 @@ from ff.core import rename_media_files
 @click.argument('input_directory') # Allows './' to mean the current working directory
 @click.argument('output_directory') # Allows './' to mean the current working directory
 @click.option('--starting', default=0, type=int, help='Starting index')
+@click.option('--dry-run', is_flag=True, help='Show what would be renamed without performing any moves')
 
-def main(rename, input_directory, output_directory, starting) -> None:
+def main(rename, input_directory, output_directory, starting, dry_run) -> None:
   """
-  FileForge CLI Tool
+  FileForge CLI a python CLI tool for batch file renaming and other
+  useful utilities when it comes to file organization
   """
+  # Follows the form of: `ff ./ ./ --rename --starting=_____ --dry-run`
+  input_directory = os.path.abspath(input_directory)
+  output_directory = os.path.abspath(output_directory)
+
   if rename:
-    # Follows the form of: `ff ./ ./ --rename --starting=_____`
-    input_directory = os.path.abspath(input_directory)
-    output_directory = os.path.abspath(output_directory)
-    
-    rename_media_files(input_directory=input_directory, output_directory=output_directory, counter=starting)
-  
-  # input_directory = input("Enter the input directory path: ").strip()
-  # output_directory = input("Enter the output directory path: ").strip()
-  
-  # if not os.path.isdir(input_directory):
-  #   print("Error: Input directory does not exist.")
-  # else:
-  #   rename_media_files(input_directory, output_directory)
-  #   print("Done.")
+    rename_media_files(input_directory=input_directory, output_directory=output_directory, counter=starting, dry_run=dry_run)
 
 if __name__ == "__main__":
   main()
