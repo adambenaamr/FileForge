@@ -1,9 +1,9 @@
 [project]
 name = "FileForge"
-version = "1.1.3"
+version = "1.1.5"
 description = "A Python CLI tool for batch file renaming and other useful utilities when it comes to file organization."
 authors = [{ name = "Adam Ben-Aamr" }]
-dependencies = ["click"]
+dependencies = ["click", "natsort", "rich"]
 
 [project.scripts]
 ff = "ff.cli:main"
