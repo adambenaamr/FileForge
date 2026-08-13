@@ -58,3 +58,5 @@ class OutputBox:
     self.console.print(*args, **kwargs)
   # def status(self, message: str, style: str = 'bold green') -> None:
   #   self.lines.append(Text(message, style=style))
+
+# TODO: Add a function called 'natural_sort()' that works similarly to the python library 'natsort'
