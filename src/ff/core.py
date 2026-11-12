@@ -1,5 +1,7 @@
 import os
 import shutil
+from natsort import natsorted
+from .utils import OutputBox
 
 def get_unique_filename(directory: str, base_name: str, extension: str) -> str:
   """
@@ -26,43 +28,60 @@ def get_unique_filename(directory: str, base_name: str, extension: str) -> str:
   counter: int = 1
 
   while os.path.exists(os.path.join(directory, new_name)):
-    new_name = f'{base_name}_{counter}{extension}'
+    new_name: str = f'{base_name}_{counter}{extension}'
     counter += 1
   
   return new_name
 
-def rename_media_files(input_directory: str, output_directory: str, counter: int = 0):
+def rename_media_files(input_directory: str, output_directory: str, counter: int = 0, dry_run: bool = False) -> None:
   """
-  Docstring for rename_media_files
+  Rename and move image and video files from a source to a destination.
 
-  :param input_directory: Description
+  This function scans a directory for common media extensions, sorts them
+  numerically (handling non-numeric filenames gracefully), and renames
+  them using a standardized 'IMG_xxxx' or 'MOV_xxxx' prefix before
+  moving them to the specified output directory.
+
+  :param input_directory: The path to the folder containing the original media files.
   :type input_directory: str
   
-  :param output_directory: Description
+  :param output_directory: The path where renamed files will be moved. Created if it doesn't exist.
   :type output_directory: str
+  
+  :param counter: The starting index for the file naming sequence. Defaults to 0.
+  :type counter: int, optional
+
+  :param dry_run: The flag used to show a preview of file changes without actually changing the files.
+  :type dry_run: bool
   """
-  image_extensions: set[str] = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp'}
+  image_extensions: set[str] = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp', '.heic'}
   video_extensions: set[str] = {'.mp4', '.mov', '.avi', '.mkv', '.wmv', '.flv', '.mpeg'}
   
   # Ensure output directory exists
   os.makedirs(output_directory, exist_ok=True)
   
-  # Get files in appearance order
-  files = [
-    files for files in os.listdir(input_directory)
-    if os.path.isfile(os.path.join(input_directory, files))
+  # Get files within directory in accordance to OS specifications (the way the OS decides to list the files)
+  files: list[str] = [
+    f for f in os.listdir(input_directory)
+    if os.path.isfile(os.path.join(input_directory, f))
   ]
+
+  # Order the files list alphabetically
+  # Since OSes define capital letters as dominatant (i.e., 'S' will come before 'a')
+  # this variable converts the files names to all lowercase letters
+  # then organized them alphabetically
+  files_sorted: list[str] = natsorted(sorted(files, key=str.lower))
   
   # Filter and sort numerically
   ordered_media: list = []
   
-  for file in files:
+  for file in files_sorted:
     _, ext = os.path.splitext(file)
     
     if ext.lower() in image_extensions.union(video_extensions):
       ordered_media.append(file)
   
-  def safe_int(name):
+  def safe_int(name) -> (int | float):
     try:
       return int(os.path.splitext(name)[0])
     except ValueError:
@@ -70,25 +89,31 @@ def rename_media_files(input_directory: str, output_directory: str, counter: int
   
   ordered_media.sort(key=safe_int)
   
-  counter = counter
-  
+  operations: list = []
+
   for file in ordered_media:
-    old_path = os.path.join(input_directory, file)
+    old_path: str = os.path.join(input_directory, file)
     _, ext = os.path.splitext(file)
     ext = ext.lower()
       
     if ext in image_extensions:
-      base_name: str = f"IMG_{counter:04d}"
+      base_name: str = f'IMG_{counter:04d}' # TODO: change this so that there is a variable called 'digit' where the user can define how many digits of numbers they want after the base name
     elif ext in video_extensions:
-      base_name: str = f"MOV_{counter:04d}"
+      base_name: str = f'IMG_{counter:04d}' # TODO: change this so that there is a variable called 'digit' where the user can define how many digits of numbers they want after the base name
     else:
       continue
       
-    final_name = get_unique_filename(output_directory, base_name, ext)
-    final_path = os.path.join(output_directory, final_name)
-      
-    # Move and rename file
-    shutil.move(old_path, final_path)
-    print(f"Renamed: {file} -> {final_name}")
-      
+    final_name: str = get_unique_filename(output_directory, base_name, ext)
+    final_path: str = os.path.join(output_directory, final_name)
+    
+    operations.append((old_path, final_path, file, final_name))
+    
     counter += 1
+
+  with OutputBox() as terminal_output:
+    for old_path, final_path, original_file_name, new_file_name in operations:
+      if dry_run:
+        terminal_output.print(f'[DRY RUN] {original_file_name} -> {new_file_name}')
+      else:
+        shutil.move(old_path, final_path)
+        terminal_output.print(f'Renamed: {original_file_name} -> {new_file_name}')
